@@ -191,23 +191,39 @@ __device__ static inline uint64_t __bitinsert_u64(uint64_t src0, uint64_t src1, 
 __device__ inline unsigned int __funnelshift_l(unsigned int lo, unsigned int hi, unsigned int shift)
 {
     uint32_t mask_shift = shift & 31;
+#if __has_builtin(__builtin_amdgcn_alignbit)
     return mask_shift == 0 ? hi : __builtin_amdgcn_alignbit(hi, lo, 32 - mask_shift);
+# else
+    return mask_shift == 0 ? hi : amdgcn_alignbit(hi, lo, 32 - mask_shift);
+#endif
 }
 
 __device__ inline unsigned int __funnelshift_lc(unsigned int lo, unsigned int hi, unsigned int shift)
 {
     uint32_t min_shift = shift >= 32 ? 32 : shift;
+#if __has_builtin(__builtin_amdgcn_alignbit)
     return min_shift == 0 ? hi : __builtin_amdgcn_alignbit(hi, lo, 32 - min_shift);
+# else
+    return min_shift == 0 ? hi : amdgcn_alignbit(hi, lo, 32 - min_shift);
+#endif
 }
 
 __device__ inline unsigned int __funnelshift_r(unsigned int lo, unsigned int hi, unsigned int shift)
 {
+#if __has_builtin(__builtin_amdgcn_alignbit)
     return __builtin_amdgcn_alignbit(hi, lo, shift);
+# else
+    return amdgcn_alignbit(hi, lo, shift);
+#endif
 }
 
 __device__ inline unsigned int __funnelshift_rc(unsigned int lo, unsigned int hi, unsigned int shift)
 {
+#if __has_builtin(__builtin_amdgcn_alignbit)
     return shift >= 32 ? hi : __builtin_amdgcn_alignbit(hi, lo, shift);
+# else
+    return shift >= 32 ? hi : amdgcn_alignbit(hi, lo, shift);
+#endif
 }
 
 __device__ static unsigned int __byte_perm(unsigned int x, unsigned int y, unsigned int s);
@@ -322,15 +338,32 @@ __device__ static inline unsigned int __usad(unsigned int x, unsigned int y, uns
 }
 
 __device__ static inline unsigned int __lane_id() {
+#if __has_builtin(__builtin_amdgcn_mbcnt_hi) && __has_builtin(__builtin_amdgcn_mbcnt_lo)
     return  __builtin_amdgcn_mbcnt_hi(
         -1, __builtin_amdgcn_mbcnt_lo(-1, 0));
+#else
+    return  amdgcn_mbcnt_hi(
+        -1, amdgcn_mbcnt_lo(-1, 0));
+#endif // __has_builtin(__builtin_amdgcn_mbcnt_hi) && __has_builtin(__builtin_amdgcn_mbcnt_lo)
 }
 
 __device__
-static inline unsigned int __mbcnt_lo(unsigned int x, unsigned int y) {return __builtin_amdgcn_mbcnt_lo(x,y);};
+static inline unsigned int __mbcnt_lo(unsigned int x, unsigned int y) {
+#if __has_builtin(__builtin_amdgcn_mbcnt_lo)
+    return __builtin_amdgcn_mbcnt_lo(x,y);
+#else
+    return amdgcn_mbcnt_lo(x,y);
+#endif // __has_builtin(__builtin_amdgcn_mbcnt_lo)
+};
 
 __device__
-static inline unsigned int __mbcnt_hi(unsigned int x, unsigned int y) {return __builtin_amdgcn_mbcnt_hi(x,y);};
+static inline unsigned int __mbcnt_hi(unsigned int x, unsigned int y) {
+#if __has_builtin(__builtin_amdgcn_mbcnt_hi)
+    return __builtin_amdgcn_mbcnt_hi(x,y);
+#else
+    return amdgcn_mbcnt_hi(x,y);
+#endif
+};
 
 /*
 HIP specific device functions
@@ -338,25 +371,41 @@ HIP specific device functions
 
 __device__ static inline unsigned __hip_ds_bpermute(int index, unsigned src) {
     union { int i; unsigned u; float f; } tmp; tmp.u = src;
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
     tmp.i = __builtin_amdgcn_ds_bpermute(index, tmp.i);
+#else
+    tmp.i = amdgcn_ds_bpermute(index, tmp.i);
+#endif
     return tmp.u;
 }
 
 __device__ static inline float __hip_ds_bpermutef(int index, float src) {
     union { int i; unsigned u; float f; } tmp; tmp.f = src;
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
     tmp.i = __builtin_amdgcn_ds_bpermute(index, tmp.i);
+#else
+    tmp.i = amdgcn_ds_bpermute(index, tmp.i);
+#endif
     return tmp.f;
 }
 
 __device__ static inline unsigned __hip_ds_permute(int index, unsigned src) {
     union { int i; unsigned u; float f; } tmp; tmp.u = src;
+#if __has_builtin(__builtin_amdgcn_ds_permute)
     tmp.i = __builtin_amdgcn_ds_permute(index, tmp.i);
+#else
+    tmp.i = amdgcn_ds_permute(index, tmp.i);
+#endif
     return tmp.u;
 }
 
 __device__ static inline float __hip_ds_permutef(int index, float src) {
     union { int i; unsigned u; float f; } tmp; tmp.f = src;
+#if __has_builtin(__builtin_amdgcn_ds_permute)
     tmp.i = __builtin_amdgcn_ds_permute(index, tmp.i);
+#else
+    tmp.i = amdgcn_ds_permute(index, tmp.i);
+#endif
     return tmp.f;
 }
 
@@ -382,8 +431,13 @@ __device__ static inline float __hip_ds_swizzlef_N(float src) {
 
 template <int dpp_ctrl, int row_mask, int bank_mask, bool bound_ctrl>
 __device__ static inline int __hip_move_dpp_N(int src) {
+#if __has_builtin(__builtin_amdgcn_mov_dpp)
     return __builtin_amdgcn_mov_dpp(src, dpp_ctrl, row_mask, bank_mask,
                                     bound_ctrl);
+#else
+    return amdgcn_mov_dpp(src, dpp_ctrl, row_mask, bank_mask,
+                                    bound_ctrl);
+#endif
 }
 
 #if !defined(__HIPCC_RTC__)
@@ -738,7 +792,13 @@ long long int  clock() { return __clock(); }
 // hip.amdgcn.bc - named sync
 __device__
 inline
-void __named_sync() { __builtin_amdgcn_s_barrier(); }
+void __named_sync() {
+#if __has_builtin(__builtin_amdgcn_s_barrier)
+  __builtin_amdgcn_s_barrier();
+#else
+    amdgcn_s_barrier();
+#endif
+}
 
 #endif // __HIP_DEVICE_COMPILE__
 
@@ -761,13 +821,21 @@ int __any(int predicate) {
 __device__
 inline
 unsigned long long int __ballot(int predicate) {
+#if __has_builtin(__builtin_amdgcn_uicmp)
     return __builtin_amdgcn_uicmp(predicate, 0, ICMP_NE);
+#else
+    return amdgcn_uicmp(predicate, 0, ICMP_NE);
+#endif
 }
 
 __device__
 inline
 unsigned long long int __ballot64(int predicate) {
+#if __has_builtin(__builtin_amdgcn_uicmp)
     return __builtin_amdgcn_uicmp(predicate, 0, ICMP_NE);
+#else
+    return amdgcn_uicmp(predicate, 0, ICMP_NE);
+#endif
 }
 
 // hip.amdgcn.bc - lanemask
@@ -922,10 +990,18 @@ static void __work_group_barrier(__cl_mem_fence_flags flags, __memory_scope scop
 {
     if (flags) {
         __atomic_work_item_fence(flags, __memory_order_release, scope);
-        __builtin_amdgcn_s_barrier();
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
+      __builtin_amdgcn_s_barrier();
+#else
+      amdgcn_s_barrier();
+#endif
         __atomic_work_item_fence(flags, __memory_order_acquire, scope);
     } else {
-        __builtin_amdgcn_s_barrier();
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
+      __builtin_amdgcn_s_barrier();
+#else
+      amdgcn_s_barrier();
+#endif
     }
 }
 
@@ -1011,10 +1087,17 @@ __device__
 inline
 unsigned __smid(void)
 {
+#if __has_builtin(__builtin_amdgcn_s_getreg)
     unsigned cu_id = __builtin_amdgcn_s_getreg(
             GETREG_IMMED(HW_ID_CU_ID_SIZE-1, HW_ID_CU_ID_OFFSET, HW_ID));
     unsigned se_id = __builtin_amdgcn_s_getreg(
             GETREG_IMMED(HW_ID_SE_ID_SIZE-1, HW_ID_SE_ID_OFFSET, HW_ID));
+#else
+    unsigned cu_id = amdgcn_s_getreg(
+            GETREG_IMMED(HW_ID_CU_ID_SIZE-1, HW_ID_CU_ID_OFFSET, HW_ID));
+    unsigned se_id = amdgcn_s_getreg(
+            GETREG_IMMED(HW_ID_SE_ID_SIZE-1, HW_ID_SE_ID_OFFSET, HW_ID));
+#endif
 
     /* Each shader engine has 16 CU */
     return (se_id << HW_ID_CU_ID_SIZE) + cu_id;

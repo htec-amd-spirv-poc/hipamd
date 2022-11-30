@@ -661,16 +661,26 @@ __device__
 inline
 unsigned int atomicInc(unsigned int* address, unsigned int val)
 {
+#if __has_builtin(__builtin_amdgcn_atomic_inc32)
     return __builtin_amdgcn_atomic_inc32(
         address, val, __ATOMIC_RELAXED, "workgroup");
+#else
+    return amdgcn_atomic_inc32(
+        address, val, __ATOMIC_RELAXED, "workgroup");
+#endif
 }
 
 __device__
 inline
 unsigned int atomicDec(unsigned int* address, unsigned int val)
 {
+#if __has_builtin(__builtin_amdgcn_atomic_dec32)
     return __builtin_amdgcn_atomic_dec32(
         address, val, __ATOMIC_RELAXED, "workgroup");
+#else
+    return amdgcn_atomic_dec32(
+        address, val, __ATOMIC_RELAXED, "workgroup");
+#endif
 }
 
 __device__

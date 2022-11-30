@@ -30,7 +30,11 @@ inline
 int __shfl(int var, int src_lane, int width = warpSize) {
     int self = __lane_id();
     int index = src_lane + (self & ~(width-1));
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
     return __builtin_amdgcn_ds_bpermute(index<<2, var);
+#else
+    return amdgcn_ds_bpermute(index<<2, var);
+#endif
 }
 __device__
 inline
@@ -135,7 +139,11 @@ int __shfl_up(int var, unsigned int lane_delta, int width = warpSize) {
     int self = __lane_id();
     int index = self - lane_delta;
     index = (index < (self & ~(width-1)))?self:index;
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
     return __builtin_amdgcn_ds_bpermute(index<<2, var);
+#else
+    return amdgcn_ds_bpermute(index<<2, var);
+#endif
 }
 __device__
 inline
@@ -241,7 +249,11 @@ int __shfl_down(int var, unsigned int lane_delta, int width = warpSize) {
     int self = __lane_id();
     int index = self + lane_delta;
     index = (int)((self&(width-1))+lane_delta) >= width?self:index;
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
     return __builtin_amdgcn_ds_bpermute(index<<2, var);
+#else
+    return amdgcn_ds_bpermute(index<<2, var);
+#endif
 }
 __device__
 inline
@@ -344,7 +356,11 @@ int __shfl_xor(int var, int lane_mask, int width = warpSize) {
     int self = __lane_id();
     int index = self^lane_mask;
     index = index >= ((self+width)&~(width-1))?self:index;
+#if __has_builtin(__builtin_amdgcn_ds_bpermute)
     return __builtin_amdgcn_ds_bpermute(index<<2, var);
+#else
+    return amdgcn_ds_bpermute(index<<2, var);
+#endif
 }
 __device__
 inline
