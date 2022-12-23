@@ -1093,13 +1093,12 @@ unsigned __smid(void)
     unsigned se_id = __builtin_amdgcn_s_getreg(
             GETREG_IMMED(HW_ID_SE_ID_SIZE-1, HW_ID_SE_ID_OFFSET, HW_ID));
 #else
-    unsigned cu_id = amdgcn_s_getreg(
-            GETREG_IMMED(HW_ID_CU_ID_SIZE-1, HW_ID_CU_ID_OFFSET, HW_ID));
-    unsigned se_id = amdgcn_s_getreg(
-            GETREG_IMMED(HW_ID_SE_ID_SIZE-1, HW_ID_SE_ID_OFFSET, HW_ID));
+    //SPIRV doesn't support hardware specific stuff
+    //TODO: if something goes wrong, this might be culprit
+    unsigned cu_id = 0;
+    unsigned se_id = 0;
 #endif
 
-    /* Each shader engine has 16 CU */
     return (se_id << HW_ID_CU_ID_SIZE) + cu_id;
 }
 
