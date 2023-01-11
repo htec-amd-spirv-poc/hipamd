@@ -319,6 +319,10 @@ static bool getTripleTargetID(std::string bundled_co_entry_id, const void* code_
       offload_kind != OFFLOAD_KIND_HCC)
     return false;
 
+  if (offload_kind == OFFLOAD_KIND_HIP){
+    co_triple_target_id = "spirv";
+    return true;
+  }
   if (offload_kind != OFFLOAD_KIND_HIPV4)
     return getTripleTargetIDFromCodeObject(code_object, co_triple_target_id, co_version);
 
@@ -333,6 +337,10 @@ static bool isCodeObjectCompatibleWithDevice(std::string co_triple_target_id,
                                              std::string agent_triple_target_id) {
   // Primitive Check
   if (co_triple_target_id == agent_triple_target_id) return true;
+
+  if (co_triple_target_id.find("spirv") != std::string::npos) {
+    return true;
+  }
 
   // Parse code object triple target id
   if (!consume(co_triple_target_id, std::string(AMDGCN_TARGET_TRIPLE) + '-')) {
@@ -437,6 +445,9 @@ hipError_t CodeObject::extractCodeObjectFromFatBinary(
     if (num_code_objs == 0) break;
     std::string bundleEntryId{desc->bundleEntryId, desc->bundleEntryIdSize};
 
+    if (bundleEntryId.find("host") != std::string::npos) {
+      continue;
+    }
     unsigned co_version = 0;
     std::string co_triple_target_id;
     if (!getTripleTargetID(bundleEntryId, image, co_triple_target_id, co_version)) continue;
